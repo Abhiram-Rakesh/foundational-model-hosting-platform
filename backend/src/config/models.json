@@ -1,0 +1,50 @@
+[
+  {
+    "id": "llama2",
+    "name": "LLaMA 2 7B",
+    "size": "3.8GB",
+    "ram_required": "6GB",
+    "description": "Meta's open-source large language model. Good all-rounder for general tasks.",
+    "speed_note": "~2-5 tokens/sec on CPU"
+  },
+  {
+    "id": "mistral",
+    "name": "Mistral 7B",
+    "size": "4.1GB",
+    "ram_required": "6GB",
+    "description": "Fast and efficient 7B model from Mistral AI. Strong reasoning capabilities.",
+    "speed_note": "~2-5 tokens/sec on CPU"
+  },
+  {
+    "id": "phi",
+    "name": "Phi-2",
+    "size": "1.7GB",
+    "ram_required": "3GB",
+    "description": "Microsoft's small but capable language model. Great for demos due to speed.",
+    "speed_note": "~8-15 tokens/sec on CPU"
+  },
+  {
+    "id": "gemma",
+    "name": "Gemma 2B",
+    "size": "1.4GB",
+    "ram_required": "3GB",
+    "description": "Google's lightweight open model. Fastest option for this hardware.",
+    "speed_note": "~10-18 tokens/sec on CPU"
+  },
+  {
+    "id": "llama3",
+    "name": "LLaMA 3 8B",
+    "size": "4.7GB",
+    "ram_required": "7GB",
+    "description": "Meta's latest open-source LLM. Significant improvements over LLaMA 2.",
+    "speed_note": "~2-4 tokens/sec on CPU"
+  },
+  {
+    "id": "tinyllama",
+    "name": "TinyLlama 1.1B",
+    "size": "637MB",
+    "ram_required": "2GB",
+    "description": "Ultra-lightweight model. Ideal for testing the pipeline without heavy resource use.",
+    "speed_note": "~15-25 tokens/sec on CPU"
+  }
+]

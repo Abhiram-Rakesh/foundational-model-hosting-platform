@@ -1,0 +1,11 @@
+# /etc/rancher/rke2/config.yaml — VM1 (Control Plane)
+# Copy this file to /etc/rancher/rke2/config.yaml on VM1
+
+write-kubeconfig-mode: "0644"
+
+tls-san:
+  - 172.25.2.51
+  - rke2-control
+
+node-name: rke2-control
+node-ip: 172.25.2.51

@@ -1,0 +1,155 @@
+# Troubleshooting
+
+## Common Issues
+
+### Pod stuck in `Pending` state
+
+**Cause:** Insufficient resources or node taint preventing scheduling.
+
+**Debug:**
+```bash
+kubectl describe pod <pod-name> -n user-1
+# Look at the Events section at the bottom
+```
+
+**Fixes:**
+- If "Insufficient cpu/memory": reduce resource requests in the deployment form, or use a smaller model
+- If "0/2 nodes are available: 1 node(s) had untolerated taint": remove the control plane taint:
+  ```bash
+  kubectl taint nodes rke2-control node-role.kubernetes.io/control-plane:NoSchedule-
+  ```
+
+### `ImagePullBackOff` or `ErrImagePull`
+
+**Cause:** Kubernetes can't pull the container image (usually missing Docker Hub credentials).
+
+**Debug:**
+```bash
+kubectl describe pod <pod-name> -n user-1
+# Look for "Failed to pull image" in events
+```
+
+**Fix:** Create the Docker Hub secret in the correct namespace:
+```bash
+kubectl create secret docker-registry dockerhub-secret \
+  --docker-username=USER --docker-password=TOKEN --docker-email=EMAIL \
+  -n user-1
+```
+
+### Model download takes forever or fails
+
+**Cause:** The initContainer can't reach `registry.ollama.ai` (no outbound internet).
+
+**Debug:**
+```bash
+kubectl logs <pod-name> -c pull-model -n user-1
+```
+
+**Fix:** Ensure VMs have DNS resolution and outbound HTTPS access. Test from inside a pod:
+```bash
+kubectl run test --rm -it --image=busybox -- wget -O- https://registry.ollama.ai
+```
+
+### `CrashLoopBackOff`
+
+**Cause:** Usually Ollama running out of memory (OOMKilled).
+
+**Debug:**
+```bash
+kubectl describe pod <pod-name> -n user-1
+# Look for "OOMKilled" in container state
+```
+
+**Fix:** Increase memory limits or use a smaller model. Phi-2 and Gemma 2B only need ~3GB.
+
+### ArgoCD sync fails
+
+**Debug:** Check the ArgoCD UI → click on the `ml-platform` application → check the sync status and any error messages.
+
+**Common causes:**
+- Git repo auth expired: update the PAT in ArgoCD Settings → Repositories
+- Invalid YAML: check the manifest file for syntax errors
+- RBAC: ArgoCD doesn't have permissions → apply `k8s-manifests/rbac/argocd-rbac.yaml`
+
+### Frontend can't reach backend
+
+**Debug:** Open browser dev tools → Network tab → check for failed requests.
+
+**Fixes:**
+- Verify the backend service is running: `kubectl get svc ml-platform-backend`
+- Check that `VITE_API_URL` in the frontend points to the correct NodePort
+- Ensure backend has CORS enabled (it does by default with `app.use(cors())`)
+
+### `kubectl` commands hang or timeout
+
+**Cause:** RKE2 server not running.
+
+**Fix:**
+```bash
+# On VM1
+sudo systemctl status rke2-server
+sudo systemctl restart rke2-server
+sudo journalctl -u rke2-server -f
+```
+
+### Nodes show `NotReady`
+
+**Fix:**
+```bash
+# Check agent on VM2
+ssh ubuntu@172.25.2.52
+sudo systemctl status rke2-agent
+sudo journalctl -u rke2-agent --since "5 min ago"
+sudo systemctl restart rke2-agent
+```
+
+## Useful Debug Commands
+
+```bash
+# Cluster overview
+kubectl get nodes -o wide
+kubectl get pods -A
+kubectl get svc -A
+
+# Events (sorted by time)
+kubectl get events -n user-1 --sort-by=.metadata.creationTimestamp
+
+# Resource usage
+kubectl top nodes
+kubectl top pods -n user-1
+
+# Describe a problematic resource
+kubectl describe pod <name> -n <namespace>
+kubectl describe svc <name> -n <namespace>
+
+# Follow logs
+kubectl logs -f <pod> -c <container> -n <namespace>
+
+# Interactive shell in a pod
+kubectl exec -it <pod> -n <namespace> -- /bin/sh
+
+# ArgoCD status
+kubectl get applications -n argocd
+```
+
+## Nuclear Options (Last Resort)
+
+### Restart everything
+```bash
+# VM1
+sudo systemctl restart rke2-server
+
+# VM2
+sudo systemctl restart rke2-agent
+
+# Wait 3-5 minutes, then check
+kubectl get nodes
+kubectl get pods -A
+```
+
+### Restore from ESXi snapshot
+If everything is broken, restore both VMs to a known-good snapshot:
+1. ESXi web client → right-click VM → Snapshots → Manage → Restore
+2. Power on both VMs
+3. Wait for RKE2 services to start automatically
+4. Verify: `kubectl get nodes && kubectl get pods -A`

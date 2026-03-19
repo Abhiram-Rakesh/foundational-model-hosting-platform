@@ -1,0 +1,20 @@
+# Helm values for bitnami/postgresql
+# Usage: helm install postgres bitnami/postgresql -f values.yaml
+
+auth:
+  postgresPassword: "CHANGE_ME_TO_A_SECURE_PASSWORD"
+  database: ml_platform
+
+primary:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: longhorn
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

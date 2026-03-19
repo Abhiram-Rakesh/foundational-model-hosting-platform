@@ -1,0 +1,9 @@
+# /etc/rancher/rke2/config.yaml — VM2 (Worker Node)
+# Copy this file to /etc/rancher/rke2/config.yaml on VM2
+# Replace PASTE_YOUR_TOKEN_HERE with the actual token from VM1:
+#   sudo cat /var/lib/rancher/rke2/server/node-token
+
+server: https://172.25.2.51:9345
+token: PASTE_YOUR_TOKEN_HERE
+node-name: rke2-worker
+node-ip: 172.25.2.52
