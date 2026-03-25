@@ -12,21 +12,31 @@
 network:
   version: 2
   ethernets:
-    ens160:        # internet adapter
+    ens160:        # internet adapter — DHCP handles the default route
       dhcp4: true
     ens192:        # VM Network adapter — check name with: ip link show
       dhcp4: false
       addresses:
         - 172.25.2.51/24   # 172.25.2.52 for VM2
-      routes:
-        - to: default
-          via: 172.25.2.1
       nameservers:
         addresses: [8.8.8.8, 8.8.4.4]
 ```
 
+> Do **not** add a `routes: default` block to `ens192`. It will redirect all traffic (including internet) through the VM Network adapter, breaking outbound connectivity.
+
 ```bash
 sudo netplan apply
+```
+
+### No internet after reboot (ping 8.8.8.8 fails, 172.25.2.x still reachable)
+
+**Cause:** A `default` route was added to the VM Network adapter (`ens192`) in netplan, overriding the DHCP default route from the internet adapter (`ens160`). All outbound traffic routes through the wrong adapter.
+
+**Fix:** Remove the `routes` block from `ens192` in `/etc/netplan/00-installer-config.yaml` and re-apply:
+
+```bash
+sudo netplan apply
+ping 8.8.8.8   # should work immediately
 ```
 
 ### Pod stuck in `Pending` state
@@ -65,14 +75,15 @@ kubectl create secret docker-registry dockerhub-secret \
 
 ### Model download takes forever or fails
 
-**Cause:** The initContainer can't reach `registry.ollama.ai` (no outbound internet).
+**Cause:** The pod can't resolve or reach `registry.ollama.ai`.
 
 **Debug:**
 ```bash
 kubectl logs <pod-name> -c pull-model -n user-1
+kubectl exec -it <pod-name> -n user-1 -- nslookup registry.ollama.ai
 ```
 
-**Fix:** Ensure VMs have DNS resolution and outbound HTTPS access. Test from inside a pod:
+**Fix:** Check DNS resolution and outbound HTTPS from inside the pod:
 ```bash
 kubectl run test --rm -it --image=busybox -- wget -O- https://registry.ollama.ai
 ```

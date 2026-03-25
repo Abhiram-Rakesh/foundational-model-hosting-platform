@@ -2,7 +2,7 @@
 
 A self-hosted SaaS platform for deploying and managing AI foundation models (LLaMA 2, Mistral, Phi, Gemma) on bare-metal infrastructure using Kubernetes, GitOps, and Ollama.
 
-> **Think of it as your own private Replicate / Hugging Face Inference Endpoints** — running entirely on hardware you control, behind an air-gapped ESXi server accessible only through a Windows bastion.
+> **Think of it as your own private Replicate / Hugging Face Inference Endpoints** — running entirely on hardware you control, on an ESXi server accessible only through a Windows bastion.
 
 ---
 
@@ -126,13 +126,13 @@ Frontend ──POST /api/deployments──► Backend API
 
 ### The Bastion Constraint
 
-The ESXi server is **completely air-gapped** from external networks. The only way to interact with it is through a Windows machine (the bastion) physically connected to the same network. This means:
+The ESXi server is only accessible through a Windows machine (the bastion) physically connected to the same network. The VMs have internet access via a dedicated internet adapter. This means:
 
 - All development, testing, and operations happen from the bastion desktop
 - ESXi management is via the web client in the bastion's browser
 - VM access is via SSH (PuTTY) from the bastion
 - All web UIs (frontend, ArgoCD, Longhorn) are opened in the bastion's browser
-- Files must be transferred through the bastion (USB, SCP, ESXi datastore upload)
+- ISOs and large files can be uploaded via the ESXi datastore browser from the bastion
 
 ---
 
@@ -247,7 +247,7 @@ foundational-model-hosting-platform/
 
 ### Downloads Required
 
-- **Ubuntu 22.04 LTS Server ISO** — download from [ubuntu.com/download/server](https://ubuntu.com/download/server) on any internet-connected machine, then transfer to the bastion
+- **Ubuntu 22.04 LTS Server ISO** — download from [ubuntu.com/download/server](https://ubuntu.com/download/server) on the bastion, then upload to the ESXi datastore
 
 ---
 
@@ -255,7 +255,7 @@ foundational-model-hosting-platform/
 
 ### 1.1 Upload Ubuntu ISO to ESXi
 
-Since the ESXi server may not have internet access, transfer the ISO through the bastion:
+The Ubuntu ISO needs to be uploaded to the ESXi datastore so VMs can boot from it. Transfer it through the bastion:
 
 1. Copy the Ubuntu ISO to the bastion (USB drive, network share, etc.)
 2. Open Chrome on the bastion → navigate to `https://172.25.2.50`
@@ -361,20 +361,19 @@ network:
 network:
   version: 2
   ethernets:
-    ens160:                  # ← internet adapter — leave on DHCP
+    ens160:                  # ← internet adapter — DHCP sets the default route
       dhcp4: true
-    ens192:                  # ← VM Network adapter — set static IP
+    ens192:                  # ← VM Network adapter — no default route needed
       dhcp4: false
       addresses:
         - 172.25.2.51/24
-      routes:
-        - to: default
-          via: 172.25.2.1    # ← adjust to your gateway
       nameservers:
         addresses:
           - 8.8.8.8
           - 8.8.4.4
 ```
+
+> **Do not add a `routes` block to the VM Network adapter.** Setting `default via 172.25.2.1` on `ens192` will route all traffic (including internet) through the wrong adapter, causing 100% packet loss to `8.8.8.8`. Let `ens160` DHCP handle the default route. Linux automatically adds a connected route for `172.25.2.x` on `ens192`.
 
 ```bash
 sudo netplan apply
@@ -404,6 +403,8 @@ free -h
 sudo apt update && sudo apt upgrade -y
 sudo timedatectl set-timezone Asia/Kolkata      # adjust to your timezone
 sudo apt install -y curl wget git open-iscsi nfs-common
+# If apt fails with "Failed to connect to <region>.archive.ubuntu.com", switch to the main mirror:
+# sudo sed -i 's/ae.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list && sudo apt update
 sudo ufw disable    # we'll harden later; K8s needs many ports
 ```
 
@@ -467,7 +468,6 @@ ssh ubuntu@172.25.2.51
 curl -sfL https://get.rke2.io | sudo sh -
 ```
 
-> **Air-gap note:** If VM1 has no internet, download the RKE2 tarball on an internet-connected machine, transfer through the bastion via SCP, and follow [RKE2 air-gap docs](https://docs.rke2.io/install/airgap).
 
 #### Configure
 
@@ -1151,7 +1151,7 @@ Removes a deployment. Deletes manifest from Git, triggers ArgoCD sync, updates D
 |---------|-------------|-----|
 | **Pod stuck `Pending`** | Insufficient CPU/memory or node taint | `kubectl describe pod <name> -n user-1` — check Events section. Remove taint or reduce resource requests |
 | **`ImagePullBackOff`** | Missing `dockerhub-secret` in namespace | Create the secret in the correct namespace |
-| **Model download fails** | No outbound internet from pods | Check DNS resolution and network policies. Pods need to reach `registry.ollama.ai` |
+| **Model download fails** | Pod can't reach `registry.ollama.ai` | Check DNS resolution inside the pod: `kubectl exec -it <pod> -- nslookup registry.ollama.ai` |
 | **ArgoCD sync fails** | Git auth error or invalid YAML | Check ArgoCD app details in UI. Verify repo connection and PAT validity |
 | **`CrashLoopBackOff`** | Ollama out of memory | Increase memory limits or switch to a smaller model (phi, gemma) |
 | **Cannot reach NodePort** | Firewall blocking 30000-32767 | `sudo ufw allow 30000:32767/tcp` on both VMs |
