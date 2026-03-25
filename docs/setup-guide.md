@@ -8,7 +8,7 @@ Create 2 VMs in ESXi:
 - VM1: `rke2-control` — 4 vCPU, 10GB RAM, 80GB disk, IP 172.25.2.51
 - VM2: `rke2-worker` — 12 vCPU, 32GB RAM, 150GB disk, IP 172.25.2.52
 
-Install Ubuntu 22.04 on both. Run setup scripts:
+Install Ubuntu 22.04 on both. Set static IPs via netplan — if VMs have 2 adapters (internet + VM Network), assign the static IP only to the VM Network adapter, not the internet adapter. Run setup scripts:
 
 ```bash
 # VM1

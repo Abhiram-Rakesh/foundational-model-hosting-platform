@@ -2,6 +2,33 @@
 
 ## Common Issues
 
+### Bastion can't ping VM (100% packet loss after setting static IP)
+
+**Cause:** VM has two network adapters (internet + VM Network) and the static IP was assigned to the internet adapter (`ens160`) instead of the VM Network adapter (`ens192`).
+
+**Fix:** Edit `/etc/netplan/00-installer-config.yaml` from the ESXi console and split the config across both adapters:
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    ens160:        # internet adapter
+      dhcp4: true
+    ens192:        # VM Network adapter — check name with: ip link show
+      dhcp4: false
+      addresses:
+        - 172.25.2.51/24   # 172.25.2.52 for VM2
+      routes:
+        - to: default
+          via: 172.25.2.1
+      nameservers:
+        addresses: [8.8.8.8, 8.8.4.4]
+```
+
+```bash
+sudo netplan apply
+```
+
 ### Pod stuck in `Pending` state
 
 **Cause:** Insufficient resources or node taint preventing scheduling.

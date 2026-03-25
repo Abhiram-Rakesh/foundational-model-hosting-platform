@@ -326,14 +326,17 @@ SSH in from the bastion (or use ESXi console) and run these commands:
 #### Set Static IP
 
 ```bash
-# Find your network interface name
+# List all network interfaces — note all names before editing netplan
 ip addr
-# Usually ens160 or ens192 on ESXi VMs
+```
 
+> **If you have 2 adapters** (one internet, one VM Network): each adapter gets its own interface name (e.g. `ens160` and `ens192`). Assign the static IP only to the VM Network adapter. Assigning it to the internet adapter will cause 100% packet loss from the bastion.
+
+```bash
 sudo nano /etc/netplan/00-installer-config.yaml
 ```
 
-Replace contents with:
+**Single adapter** (VM Network only):
 
 ```yaml
 network:
@@ -352,12 +355,32 @@ network:
           - 8.8.4.4
 ```
 
+**Two adapters** (internet + VM Network):
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    ens160:                  # ← internet adapter — leave on DHCP
+      dhcp4: true
+    ens192:                  # ← VM Network adapter — set static IP
+      dhcp4: false
+      addresses:
+        - 172.25.2.51/24
+      routes:
+        - to: default
+          via: 172.25.2.1    # ← adjust to your gateway
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+```
+
 ```bash
 sudo netplan apply
 
-# Verify
-ip addr show ens160
-# Should show 172.25.2.51/24
+# Verify — 172.25.2.51/24 should appear on the VM Network adapter
+ip addr show
 ```
 
 Test from the bastion's Command Prompt:
