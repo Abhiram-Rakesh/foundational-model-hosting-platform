@@ -5,8 +5,8 @@
 | **Hostname** | rke2-control |
 | **IP Address** | 172.25.2.51 |
 | **vCPUs** | 4 |
-| **RAM** | 16 GB (16384 MB) |
-| **Disk** | 100 GB (Thin Provisioned) |
+| **RAM** | 10 GB (10240 MB) |
+| **Disk** | 80 GB (Thin Provisioned) |
 | **OS** | Ubuntu 22.04 LTS Server |
 | **Role** | RKE2 Server (Kubernetes control plane) |
 

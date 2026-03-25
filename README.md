@@ -49,8 +49,8 @@ A self-hosted SaaS platform for deploying and managing AI foundation models (LLa
 │  ┌──────────────────────┐    ┌──────────────────────────────────┐  │
 │  │   VM1: rke2-control  │    │       VM2: rke2-worker           │  │
 │  │   172.25.2.51        │    │       172.25.2.52                │  │
-│  │   4 vCPU / 16GB RAM  │    │       16 vCPU / 48GB RAM        │  │
-│  │   100GB Disk         │    │       200GB Disk                 │  │
+│  │   4 vCPU / 10GB RAM  │    │       12 vCPU / 32GB RAM        │  │
+│  │   80GB Disk          │    │       150GB Disk                 │  │
 │  │                      │    │                                  │  │
 │  │   ┌─ K8s Control ──┐ │    │   ┌─ K8s Workloads ──────────┐  │  │
 │  │   │ API Server     │ │    │   │ Ollama Pod (llama2)       │  │  │
@@ -284,9 +284,9 @@ All components share the same ESXi virtual switch / port group as the bastion:
 
 | Resource | VM1 (Control Plane) | VM2 (Worker Node) | Reasoning |
 |----------|-------------------|-------------------|-----------|
-| **RAM** | 16 GB | 48 GB | Worker loads AI models into RAM |
-| **vCPUs** | 4 | 16 | Worker runs inference computation |
-| **Disk** | 100 GB (thin) | 200 GB (thin) | Worker stores model files on PVC |
+| **RAM** | 10 GB | 32 GB | Worker loads AI models into RAM |
+| **vCPUs** | 4 | 12 | Worker runs inference computation |
+| **Disk** | 80 GB (thin) | 150 GB (thin) | Worker stores model files on PVC |
 | **OS** | Ubuntu 22.04 LTS | Ubuntu 22.04 LTS | Stable, well-supported |
 
 ### 1.4 Create VM1 (Control Plane)
@@ -298,8 +298,8 @@ In the ESXi web client:
 3. **Select storage** → pick your datastore → Next
 4. **Customize settings:**
    - CPU: **4**
-   - Memory: **16384 MB**
-   - Hard disk 1: **100 GB**, Thin Provisioned
+   - Memory: **10240 MB**
+   - Hard disk 1: **80 GB**, Thin Provisioned
    - CD/DVD Drive 1: **Datastore ISO file** → browse to your Ubuntu ISO
    - Network Adapter 1: connected to the correct port group
 5. **Review** → Finish
@@ -399,9 +399,9 @@ In ESXi web client: right-click `rke2-control` → **Snapshots → Take snapshot
 | Setting | VM2 Value |
 |---------|-----------|
 | VM Name | `rke2-worker` |
-| CPU | 16 |
-| RAM | 49152 MB (48 GB) |
-| Disk | 200 GB, Thin Provisioned |
+| CPU | 12 |
+| RAM | 32768 MB (32 GB) |
+| Disk | 150 GB, Thin Provisioned |
 | Hostname | `rke2-worker` |
 | Static IP | `172.25.2.52` |
 | Snapshot | `fresh-ubuntu-base` |

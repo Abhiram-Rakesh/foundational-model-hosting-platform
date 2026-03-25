@@ -5,8 +5,8 @@ Condensed version of the README for experienced users.
 ## 1. VMs (15 min)
 
 Create 2 VMs in ESXi:
-- VM1: `rke2-control` — 4 vCPU, 16GB RAM, 100GB disk, IP 172.25.2.51
-- VM2: `rke2-worker` — 16 vCPU, 48GB RAM, 200GB disk, IP 172.25.2.52
+- VM1: `rke2-control` — 4 vCPU, 10GB RAM, 80GB disk, IP 172.25.2.51
+- VM2: `rke2-worker` — 12 vCPU, 32GB RAM, 150GB disk, IP 172.25.2.52
 
 Install Ubuntu 22.04 on both. Run setup scripts:
 

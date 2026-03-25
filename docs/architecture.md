@@ -5,7 +5,7 @@
 The platform consists of six layers:
 
 1. **Physical Layer** — HP ProLiant DL360p Gen8 running ESXi 7.0, accessible only via a Windows bastion server
-2. **VM Layer** — Two Ubuntu 22.04 VMs: VM1 (control plane, 16GB/4vCPU) and VM2 (worker, 48GB/16vCPU)
+2. **VM Layer** — Two Ubuntu 22.04 VMs: VM1 (control plane, 10GB/4vCPU) and VM2 (worker, 32GB/12vCPU)
 3. **Kubernetes Layer** — RKE2 cluster spanning both VMs
 4. **Platform Services** — ArgoCD (GitOps), Longhorn (storage), PostgreSQL (database)
 5. **Application Layer** — Backend (Express.js) + Frontend (React) running as K8s pods
