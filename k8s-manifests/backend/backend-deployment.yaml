@@ -39,10 +39,16 @@ spec:
               value: "postgres"
             - name: GIT_REPO_PATH
               value: "/app/repo"
+            - name: GIT_REPO_URL
+              value: "https://github.com/Abhiram-Rakesh/foundational-model-hosting-platform.git"
+            - name: GIT_USERNAME
+              value: "Abhiram-Rakesh"
             - name: ARGOCD_URL
               value: "https://argocd-server.argocd.svc.cluster.local:443"
+            - name: ARGOCD_APP_NAME
+              value: "ml-platform"
             - name: CLUSTER_IP
-              value: "172.25.2.51"
+              value: "172.25.2.52"
             - name: PORT
               value: "3001"
           resources:
