@@ -19,8 +19,7 @@ spec:
         - name: dockerhub-secret
       containers:
         - name: backend
-          # CHANGE THIS to your Docker Hub username
-          image: YOUR_DOCKERHUB_USERNAME/ml-platform-backend:latest
+          image: cloudseederabhi/ml-platform-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3001

@@ -19,8 +19,7 @@ spec:
         - name: dockerhub-secret
       containers:
         - name: frontend
-          # CHANGE THIS to your Docker Hub username
-          image: YOUR_DOCKERHUB_USERNAME/ml-platform-frontend:latest
+          image: cloudseederabhi/ml-platform-frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80

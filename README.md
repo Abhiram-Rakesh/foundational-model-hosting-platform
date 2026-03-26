@@ -701,7 +701,15 @@ Open `https://172.25.2.51:<NodePort>` in the bastion's browser. Login: `admin` /
 
 #### Generate an API token
 
-In ArgoCD UI: **Settings → Accounts → admin → Tokens → Generate New**
+First enable the `apiKey` capability for the admin account (required — without this the UI returns an "insufficient scope" error):
+
+```bash
+kubectl -n argocd patch configmap argocd-cm \
+  --type merge \
+  -p '{"data":{"accounts.admin":"apiKey,login"}}'
+```
+
+Then in ArgoCD UI: **Settings → Accounts → admin → Tokens → Generate New**
 
 Save this token — it becomes the `ARGOCD_TOKEN` environment variable.
 
@@ -762,6 +770,8 @@ Internal service address: `postgres-postgresql.default.svc.cluster.local:5432`
 
 ### 3.4 Docker Hub Pull Secret
 
+Generate a Docker Hub access token at `hub.docker.com` → **Account Settings → Security → Personal access tokens**. Set permission to **Read & Write** (Read-only tokens will fail when pushing images).
+
 ```bash
 # In user-1 namespace (for Ollama pods)
 kubectl create secret docker-registry dockerhub-secret \
@@ -777,6 +787,8 @@ kubectl create secret docker-registry dockerhub-secret \
   --docker-email=YOUR_EMAIL \
   -n default
 ```
+
+> If you recreate the token later, delete and recreate both secrets with the new token.
 
 ### 3.5 Snapshot
 
@@ -821,10 +833,12 @@ This tells ArgoCD to watch `k8s-manifests/manifests/` in this repo. Any YAML fil
 ### 4.4 Connect ArgoCD to Your Private Repo
 
 In ArgoCD UI: **Settings → Repositories → Connect Repo**
-- Method: **HTTPS**
-- URL: `https://github.com/YOUR_USERNAME/foundational-model-hosting-platform.git`
-- Username: your GitHub username
-- Password: your PAT
+- Type: **git**
+- Name: `foundational-model-hosting-platform` (or any label)
+- Project: `default`
+- Repo URL: `https://github.com/YOUR_USERNAME/foundational-model-hosting-platform.git`
+- Username: your **GitHub username** (not ArgoCD admin)
+- Password: your **GitHub PAT** (not ArgoCD password)
 
 ---
 
@@ -832,18 +846,32 @@ In ArgoCD UI: **Settings → Repositories → Connect Repo**
 
 ### 5.1 Install Dependencies
 
+Install Node.js, npm, and Docker on VM1 if not already present:
+
 ```bash
-cd backend
+# Node.js + npm
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Docker
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Log in to Docker Hub (use Read & Write access token)
+docker login
+```
+
+Generate the `package-lock.json` required by the Dockerfile:
+
+```bash
+cd ~/foundational-model-hosting-platform/backend
 npm install
 ```
 
 ### 5.2 Configure Environment
 
-```bash
-cp .env.example .env
-# Edit .env with your actual values
-nano .env
-```
+The `.env` file is for local development only. When running in Kubernetes, environment variables come from the `backend-secrets` Kubernetes secret and the deployment manifest — no `.env` file is needed for deployment.
 
 ### 5.3 Key Files
 
@@ -864,11 +892,9 @@ nano .env
 ### 5.4 Build and Deploy
 
 ```bash
-# Build container image
-docker build -t YOUR_DOCKERHUB_USERNAME/ml-platform-backend:latest .
-docker push YOUR_DOCKERHUB_USERNAME/ml-platform-backend:latest
-
-# Deploy to cluster
+cd ~/foundational-model-hosting-platform/backend
+docker build -t cloudseederabhi/ml-platform-backend:latest .
+docker push cloudseederabhi/ml-platform-backend:latest
 kubectl apply -f ../k8s-manifests/backend/backend-deployment.yaml
 ```
 
@@ -879,7 +905,7 @@ kubectl apply -f ../k8s-manifests/backend/backend-deployment.yaml
 ### 6.1 Install Dependencies
 
 ```bash
-cd frontend
+cd ~/foundational-model-hosting-platform/frontend
 npm install
 ```
 
@@ -898,9 +924,9 @@ npm install
 ### 6.3 Build and Deploy
 
 ```bash
-docker build -t YOUR_DOCKERHUB_USERNAME/ml-platform-frontend:latest .
-docker push YOUR_DOCKERHUB_USERNAME/ml-platform-frontend:latest
-
+cd ~/foundational-model-hosting-platform/frontend
+docker build -t cloudseederabhi/ml-platform-frontend:latest .
+docker push cloudseederabhi/ml-platform-frontend:latest
 kubectl apply -f ../k8s-manifests/frontend/frontend-deployment.yaml
 ```
 

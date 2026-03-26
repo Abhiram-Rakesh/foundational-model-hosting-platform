@@ -28,6 +28,66 @@ network:
 sudo netplan apply
 ```
 
+### ArgoCD "account does not have apiKey capability"
+
+**Cause:** The admin account does not have the `apiKey` capability enabled by default.
+
+**Fix:**
+```bash
+kubectl -n argocd patch configmap argocd-cm \
+  --type merge \
+  -p '{"data":{"accounts.admin":"apiKey,login"}}'
+```
+
+No restart needed — retry generating the token in the UI immediately.
+
+### Docker Hub push fails with "insufficient_scope"
+
+**Cause:** The Docker Hub access token was created with **Read-only** permission. Pushing images requires **Read & Write**.
+
+**Fix:** Delete the old token in Docker Hub → **Account Settings → Security**, create a new one with **Read & Write** permission, then:
+```bash
+docker login   # use new token
+```
+
+Also recreate the Kubernetes pull secrets with the new token:
+```bash
+kubectl delete secret dockerhub-secret -n user-1
+kubectl delete secret dockerhub-secret -n default
+
+kubectl create secret docker-registry dockerhub-secret \
+  --docker-username=YOUR_USERNAME \
+  --docker-password=NEW_TOKEN \
+  --docker-email=YOUR_EMAIL \
+  -n user-1
+
+kubectl create secret docker-registry dockerhub-secret \
+  --docker-username=YOUR_USERNAME \
+  --docker-password=NEW_TOKEN \
+  --docker-email=YOUR_EMAIL \
+  -n default
+```
+
+### Pods stuck in `InvalidImageName`
+
+**Cause:** The deployment manifests still contain the `YOUR_DOCKERHUB_USERNAME` placeholder instead of the actual Docker Hub username.
+
+**Fix:** Update the image field in both manifests and reapply:
+```bash
+kubectl apply -f k8s-manifests/backend/backend-deployment.yaml
+kubectl apply -f k8s-manifests/frontend/frontend-deployment.yaml
+```
+
+### Docker build fails — "package-lock.json not found"
+
+**Cause:** `npm ci` in the Dockerfile requires a `package-lock.json` file which isn't committed to the repo.
+
+**Fix:** Run `npm install` locally first to generate it, then build:
+```bash
+npm install
+docker build -t cloudseederabhi/ml-platform-backend:latest .
+```
+
 ### rke2-agent fails with "Invalid CA hash length"
 
 **Cause:** The join token in `/etc/rancher/rke2/config.yaml` on VM2 was copy-pasted and got truncated. The token is 108 characters — losing even one character causes this error.
