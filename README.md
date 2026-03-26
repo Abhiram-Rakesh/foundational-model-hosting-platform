@@ -34,39 +34,39 @@ A self-hosted SaaS platform for deploying and managing AI foundation models (LLa
 │                        WINDOWS BASTION SERVER                       │
 │  (Only access point — browser, SSH client, development tools)       │
 │                                                                     │
-│   Browser ──► ESXi Web Client (172.25.2.50)                        │
-│   Browser ──► Frontend UI    (172.25.2.51:<NodePort>)              │
-│   Browser ──► ArgoCD UI      (172.25.2.51:<NodePort>)              │
-│   Browser ──► Longhorn UI    (172.25.2.51:<NodePort>)              │
-│   PuTTY  ──► SSH to VM1     (172.25.2.51:22)                      │
-│   PuTTY  ──► SSH to VM2     (172.25.2.52:22)                      │
+│   Browser ──► ESXi Web Client (172.25.2.50)                         │
+│   Browser ──► Frontend UI    (172.25.2.51:<NodePort>)               │
+│   Browser ──► ArgoCD UI      (172.25.2.51:<NodePort>)               │
+│   Browser ──► Longhorn UI    (172.25.2.51:<NodePort>)               │
+│   PuTTY  ──► SSH to VM1     (172.25.2.51:22)                        │
+│   PuTTY  ──► SSH to VM2     (172.25.2.52:22)                        │
 └─────────────────────┬───────────────────────────────────────────────┘
                       │ ESXi Internal Network
 ┌─────────────────────▼───────────────────────────────────────────────┐
 │                   VMware ESXi 7.0 Hypervisor                        │
 │              HP ProLiant DL360p Gen8 (172.25.2.50)                  │
 │                                                                     │
-│  ┌──────────────────────┐    ┌──────────────────────────────────┐  │
-│  │   VM1: rke2-control  │    │       VM2: rke2-worker           │  │
-│  │   172.25.2.51        │    │       172.25.2.52                │  │
-│  │   4 vCPU / 10GB RAM  │    │       12 vCPU / 32GB RAM        │  │
-│  │   80GB Disk          │    │       150GB Disk                 │  │
-│  │                      │    │                                  │  │
-│  │   ┌─ K8s Control ──┐ │    │   ┌─ K8s Workloads ──────────┐  │  │
-│  │   │ API Server     │ │    │   │ Ollama Pod (llama2)       │  │  │
-│  │   │ etcd           │ │    │   │ Ollama Pod (mistral)      │  │  │
-│  │   │ Scheduler      │ │    │   │ Ollama Pod (phi)          │  │  │
-│  │   │ Controller Mgr │ │    │   │ ...more model pods...     │  │  │
-│  │   └────────────────┘ │    │   └───────────────────────────┘  │  │
-│  │                      │    │                                  │  │
-│  │   ┌─ Shared Svcs ──┐ │    │   ┌─ Storage ────────────────┐  │  │
-│  │   │ ArgoCD         │ │    │   │ Longhorn Replicas        │  │  │
-│  │   │ PostgreSQL     │ │    │   │ shared-models-pvc (50Gi) │  │  │
-│  │   │ Backend API    │ │    │   └───────────────────────────┘  │  │
-│  │   │ Frontend       │ │    │                                  │  │
-│  │   │ Longhorn Mgr   │ │    │                                  │  │
-│  │   └────────────────┘ │    │                                  │  │
-│  └──────────────────────┘    └──────────────────────────────────┘  │
+│  ┌──────────────────────┐    ┌──────────────────────────────────┐   │
+│  │   VM1: rke2-control  │    │       VM2: rke2-worker           │   │
+│  │   172.25.2.51        │    │       172.25.2.52                │   │
+│  │   4 vCPU / 10GB RAM  │    │       12 vCPU / 32GB RAM         │   │
+│  │   80GB Disk          │    │       150GB Disk                 │   │
+│  │                      │    │                                  │   │
+│  │   ┌─ K8s Control ──┐ │    │   ┌─ K8s Workloads ───────────┐  │   │
+│  │   │ API Server     │ │    │   │ Ollama Pod (llama2)       │  │   │
+│  │   │ etcd           │ │    │   │ Ollama Pod (mistral)      │  │   │
+│  │   │ Scheduler      │ │    │   │ Ollama Pod (phi)          │  │   │
+│  │   │ Controller Mgr │ │    │   │ ...more model pods...     │  │   │
+│  │   └────────────────┘ │    │   └───────────────────────────┘  │   │
+│  │                      │    │                                  │   │
+│  │   ┌─ Shared Svcs ──┐ │    │   ┌─ Storage ────────────────┐   │   │
+│  │   │ ArgoCD         │ │    │   │ Longhorn Replicas        │   │   │
+│  │   │ PostgreSQL     │ │    │   │ shared-models-pvc (50Gi) │   │   │
+│  │   │ Backend API    │ │    │   └──────────────────────────┘   │   │
+│  │   │ Frontend       │ │    │                                  │   │
+│  │   │ Longhorn Mgr   │ │    │                                  │   │
+│  │   └────────────────┘ │    │                                  │   │
+│  └──────────────────────┘    └──────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
