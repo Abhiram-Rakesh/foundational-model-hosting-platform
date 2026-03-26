@@ -28,6 +28,31 @@ network:
 sudo netplan apply
 ```
 
+### rke2-agent fails with "Invalid CA hash length"
+
+**Cause:** The join token in `/etc/rancher/rke2/config.yaml` on VM2 was copy-pasted and got truncated. The token is 108 characters — losing even one character causes this error.
+
+**Fix:** Rewrite the config from VM1 without copy-paste:
+
+```bash
+TOKEN=$(sudo cat /var/lib/rancher/rke2/server/node-token | tr -d '\n') && ssh ubuntu@172.25.2.52 "sudo tee /etc/rancher/rke2/config.yaml << 'EOF'
+server: https://172.25.2.51:9345
+token: ${TOKEN}
+node-name: rke2-worker
+node-ip: 172.25.2.52
+EOF"
+```
+
+Verify token length (should return `109`):
+```bash
+ssh ubuntu@172.25.2.52 "sudo grep token /etc/rancher/rke2/config.yaml | awk '{print \$2}' | wc -c"
+```
+
+Then restart the agent:
+```bash
+ssh ubuntu@172.25.2.52 "sudo systemctl restart rke2-agent"
+```
+
 ### No internet after reboot (ping 8.8.8.8 fails, 172.25.2.x still reachable)
 
 **Cause:** A `default` route was added to the VM Network adapter (`ens192`) in netplan, overriding the DHCP default route from the internet adapter (`ens160`). All outbound traffic routes through the wrong adapter.

@@ -1,4 +1,4 @@
-# 🧠 Foundational Model Hosting Platform
+# Foundational Model Hosting Platform
 
 A self-hosted SaaS platform for deploying and managing AI foundation models (LLaMA 2, Mistral, Phi, Gemma) on bare-metal infrastructure using Kubernetes, GitOps, and Ollama.
 
@@ -6,7 +6,7 @@ A self-hosted SaaS platform for deploying and managing AI foundation models (LLa
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
 - [Hardware & Environment](#hardware--environment)
@@ -317,7 +317,7 @@ In the ESXi web client:
    - **CHECK "Install OpenSSH server"** ← critical
    - Skip snaps → Done → Reboot
 
-> ⚠️ After reboot, if it tries to boot from ISO again: power off VM → edit settings → disconnect CD/DVD drive → power on.
+> After reboot, if it tries to boot from ISO again: power off VM → edit settings → disconnect CD/DVD drive → power on.
 
 ### 1.6 Configure VM1
 
@@ -522,13 +522,44 @@ NAME           STATUS   ROLES                       AGE   VERSION
 rke2-control   Ready    control-plane,etcd,master   5m    v1.28.x+rke2r1
 ```
 
-#### Get the join token
+#### Set up SSH key access to VM2
+
+Before getting the token, set up passwordless SSH from VM1 to VM2 — this is required for the token transfer command:
 
 ```bash
-sudo cat /var/lib/rancher/rke2/server/node-token
+# Generate SSH key (press Enter to accept defaults)
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+
+# Copy key to VM2 (prompts for VM2 ubuntu password once)
+ssh-copy-id ubuntu@172.25.2.52
 ```
 
-**Copy this entire string** — you'll need it for VM2.
+Then configure passwordless sudo on VM2 so remote commands don't prompt for a password:
+
+```bash
+ssh ubuntu@172.25.2.52 "echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/ubuntu-nopasswd"
+```
+
+#### Get the join token and write VM2 config in one command
+
+Run this on VM1 — it reads the token and writes the full config to VM2 without copy-paste:
+
+```bash
+TOKEN=$(sudo cat /var/lib/rancher/rke2/server/node-token | tr -d '\n') && ssh ubuntu@172.25.2.52 "sudo tee /etc/rancher/rke2/config.yaml << 'EOF'
+server: https://172.25.2.51:9345
+token: ${TOKEN}
+node-name: rke2-worker
+node-ip: 172.25.2.52
+EOF"
+```
+
+Verify the token length — should return `109` (108 chars + newline):
+
+```bash
+ssh ubuntu@172.25.2.52 "sudo grep token /etc/rancher/rke2/config.yaml | awk '{print \$2}' | wc -c"
+```
+
+> Do not manually copy-paste the token. It is 108 characters and copy-paste truncation causes an "Invalid CA hash length" error on the agent.
 
 ### 2.3 Install RKE2 Agent on VM2
 
@@ -542,22 +573,6 @@ ssh ubuntu@172.25.2.52
 
 ```bash
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sudo sh -
-```
-
-#### Configure
-
-```bash
-sudo mkdir -p /etc/rancher/rke2
-sudo nano /etc/rancher/rke2/config.yaml
-```
-
-Paste (also at `infrastructure/rke2/worker-config.yaml`):
-
-```yaml
-server: https://172.25.2.51:9345
-token: PASTE_YOUR_TOKEN_HERE
-node-name: rke2-worker
-node-ip: 172.25.2.52
 ```
 
 #### Start the agent
