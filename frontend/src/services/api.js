@@ -15,7 +15,7 @@ import axios from 'axios';
 // The backend API base URL.
 // In production (inside the container), this comes from the build-time env var.
 // During development, change the fallback to your actual backend NodePort.
-const API_BASE = import.meta.env.VITE_API_URL || 'http://172.25.2.51:30001';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://172.25.2.51:32545';
 
 const api = axios.create({
   baseURL: API_BASE,
