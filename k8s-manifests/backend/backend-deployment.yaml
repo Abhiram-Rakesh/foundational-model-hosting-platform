@@ -15,6 +15,7 @@ spec:
       labels:
         app: ml-platform-backend
     spec:
+      serviceAccountName: backend-sa
       imagePullSecrets:
         - name: dockerhub-secret
       containers:

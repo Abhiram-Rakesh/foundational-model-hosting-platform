@@ -2,8 +2,11 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install git (needed for git add/commit/push operations)
-RUN apk add --no-cache git
+# Install git and kubectl
+RUN apk add --no-cache git curl && \
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
 
 # Install dependencies
 COPY package*.json ./
