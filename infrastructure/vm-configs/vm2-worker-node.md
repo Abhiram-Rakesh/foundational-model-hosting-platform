@@ -14,7 +14,7 @@
 
 - Ollama model pods (the heavy workloads)
 - Longhorn storage replicas
-- shared-models-pvc (50Gi — stores downloaded AI models)
+- shared-models-pvc (25Gi — stores downloaded AI models, single replica)
 
 ## Key Ports
 

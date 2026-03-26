@@ -3,10 +3,12 @@ kind: PersistentVolumeClaim
 metadata:
   name: shared-models-pvc
   namespace: user-1
+  annotations:
+    longhorn.io/replica-count: "1"
 spec:
   accessModes:
     - ReadWriteMany
   storageClassName: longhorn
   resources:
     requests:
-      storage: 50Gi
+      storage: 25Gi
