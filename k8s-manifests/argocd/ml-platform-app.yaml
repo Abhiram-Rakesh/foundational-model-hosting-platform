@@ -6,8 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    # CHANGE THIS to your actual GitHub repo URL
-    repoURL: https://github.com/YOUR_USERNAME/foundational-model-hosting-platform.git
+    repoURL: https://github.com/Abhiram-Rakesh/foundational-model-hosting-platform.git
     targetRevision: main
     path: k8s-manifests/manifests
     directory:
