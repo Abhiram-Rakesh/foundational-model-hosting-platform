@@ -60,11 +60,24 @@ kubectl apply -f k8s-manifests/argocd/ml-platform-app.yaml
 ## 5. Backend + Frontend
 
 ```bash
-cd backend && docker build -t user/ml-platform-backend:latest . && docker push ...
-cd frontend && docker build -t user/ml-platform-frontend:latest . && docker push ...
+# Install Node.js, npm, Docker on VM1 first (see README §5.1)
 
-kubectl apply -f k8s-manifests/backend/backend-deployment.yaml
-kubectl apply -f k8s-manifests/frontend/frontend-deployment.yaml
+# Apply backend RBAC
+kubectl apply -f k8s-manifests/rbac/backend-rbac.yaml
+
+# Backend
+cd ~/foundational-model-hosting-platform/backend
+npm install
+docker build -t cloudseederabhi/ml-platform-backend:latest .
+docker push cloudseederabhi/ml-platform-backend:latest
+kubectl apply -f ~/foundational-model-hosting-platform/k8s-manifests/backend/backend-deployment.yaml
+
+# Frontend
+cd ~/foundational-model-hosting-platform/frontend
+npm install
+docker build -t cloudseederabhi/ml-platform-frontend:latest .
+docker push cloudseederabhi/ml-platform-frontend:latest
+kubectl apply -f ~/foundational-model-hosting-platform/k8s-manifests/frontend/frontend-deployment.yaml
 ```
 
 ## 6. Test

@@ -889,14 +889,38 @@ The `.env` file is for local development only. When running in Kubernetes, envir
 | `src/middleware/validator.js` | Input validation (CPU/memory format, replicas range) |
 | `src/middleware/errorHandler.js` | Global error handler |
 
-### 5.4 Build and Deploy
+### 5.4 Apply RBAC and Deploy
+
+The backend needs a ServiceAccount with permissions to query pods and services in the `user-1` namespace. Apply the RBAC first:
+
+```bash
+kubectl apply -f k8s-manifests/rbac/backend-rbac.yaml
+```
+
+Then build and deploy:
 
 ```bash
 cd ~/foundational-model-hosting-platform/backend
+npm install
 docker build -t cloudseederabhi/ml-platform-backend:latest .
 docker push cloudseederabhi/ml-platform-backend:latest
-kubectl apply -f ../k8s-manifests/backend/backend-deployment.yaml
+kubectl apply -f ~/foundational-model-hosting-platform/k8s-manifests/backend/backend-deployment.yaml
 ```
+
+Verify the pod is running:
+
+```bash
+kubectl get pods -n default -l app=ml-platform-backend
+```
+
+> If the pod shows `CreateContainerConfigError`, the `backend-secrets` secret is missing. Create it:
+> ```bash
+> kubectl create secret generic backend-secrets \
+>   --from-literal=PG_PASSWORD=your_pg_password \
+>   --from-literal=GIT_TOKEN=your_github_pat \
+>   --from-literal=ARGOCD_TOKEN=your_argocd_token \
+>   -n default
+> ```
 
 ---
 
@@ -925,12 +949,21 @@ npm install
 
 ```bash
 cd ~/foundational-model-hosting-platform/frontend
+npm install
 docker build -t cloudseederabhi/ml-platform-frontend:latest .
 docker push cloudseederabhi/ml-platform-frontend:latest
-kubectl apply -f ../k8s-manifests/frontend/frontend-deployment.yaml
+kubectl apply -f ~/foundational-model-hosting-platform/k8s-manifests/frontend/frontend-deployment.yaml
+```
+
+Get the frontend NodePort:
+
+```bash
+kubectl get svc ml-platform-frontend -n default
 ```
 
 Frontend accessible at `http://172.25.2.51:<NodePort>` from the bastion.
+
+> If the model dropdown is blank, the frontend is pointing to the wrong backend NodePort. Check the backend NodePort with `kubectl get svc ml-platform-backend -n default`, update `frontend/src/services/api.js`, rebuild and redeploy.
 
 ---
 
@@ -940,11 +973,17 @@ Frontend accessible at `http://172.25.2.51:<NodePort>` from the bastion.
 
 1. Open frontend at `http://172.25.2.51:<frontend-nodeport>`
 2. Click **New Deployment**
-3. Select **llama2** | CPU: `2000m` / `4000m` | Memory: `4Gi` / `8Gi` | Replicas: `1`
+3. Select a model — start with **tinyllama** (smallest, ~600MB, fastest to pull)
 4. Click **Deploy**
-5. Watch ArgoCD UI — sync triggers automatically
-6. In terminal: `kubectl get pods -n user-1 -w` — watch pod phases
-7. Frontend polls and shows **Running** with API endpoint
+5. Watch ArgoCD UI — sync triggers within seconds
+6. In terminal: `kubectl get pods -n user-1 -w` — watch pod phases (`Init:0/1` = downloading model)
+7. Follow download progress: `kubectl logs -n user-1 <pod-name> -c pull-model -f`
+8. Frontend polls and shows **Running** with API endpoint once pod is ready
+
+> If you have stale deployment records from failed attempts, clear them before testing:
+> ```bash
+> kubectl exec -it postgres-postgresql-0 -- psql -U postgres -d ml_platform -c "DELETE FROM deployments;"
+> ```
 
 ### Test the AI Endpoint
 

@@ -68,6 +68,41 @@ kubectl create secret docker-registry dockerhub-secret \
   -n default
 ```
 
+### Deploy fails with "git clone /app/repo does not exist"
+
+**Cause:** `GIT_REPO_URL` env var is missing from the backend deployment manifest, so the backend tries to clone a local path instead of GitHub.
+
+**Fix:** Ensure `GIT_REPO_URL`, `GIT_USERNAME`, and `ARGOCD_APP_NAME` are set in `backend-deployment.yaml` and reapply:
+
+```bash
+kubectl apply -f k8s-manifests/backend/backend-deployment.yaml
+kubectl rollout restart deployment ml-platform-backend -n default
+```
+
+### Model dropdown is blank on New Deployment page
+
+**Cause:** The frontend is pointing to the wrong backend NodePort. The fallback URL in `api.js` may not match the actual assigned NodePort.
+
+**Fix:** Check the actual backend NodePort:
+```bash
+kubectl get svc ml-platform-backend -n default
+```
+
+Update `frontend/src/services/api.js` with the correct port, rebuild and redeploy:
+```bash
+cd ~/foundational-model-hosting-platform/frontend
+npm install
+docker build -t cloudseederabhi/ml-platform-frontend:latest .
+docker push cloudseederabhi/ml-platform-frontend:latest
+kubectl rollout restart deployment ml-platform-frontend -n default
+```
+
+### kubectl not found inside backend container
+
+**Cause:** The backend Dockerfile did not include `kubectl`, which is required for pod status polling.
+
+**Fix:** The Dockerfile now installs `kubectl` during the build. Rebuild the backend image and redeploy.
+
 ### Pods stuck in `InvalidImageName`
 
 **Cause:** The deployment manifests still contain the `YOUR_DOCKERHUB_USERNAME` placeholder instead of the actual Docker Hub username.
